@@ -1,164 +1,187 @@
-/**
- * Create a business network for initiation of clinical trial by pharmaceutical company, 
- * Meta Pharma.
- * Meta Pharma company produces 7,500 units of temperature control drug and transports 
- * to hospitals   
- * in France. The first step is to ship the drug to a storage facility where couriers 
- * will deliver the goods to *respective locations for patients to use in clinical trials.
-*/
-
-namespace org.acme.shipping.clinical_trials
-
-/**
- * Status of shipping the drug
+/**  Initialize some test assets and participants useful for running a demo.
+  @param {org.acme.shipping.clinical_trials.Create_Drug_Batch} create_batch
+  @transaction
  */
-enum DrugShipmentStatus {
-  o CREATED
-  o IN_TRANSIT
-  o RECEIVED
-}
-
-/**   
-* TRANSACTIONS
- * An abstract transaction relating to shipment of drug to a storage facility or to respective hospital. 
- */
-abstract transaction DrugShipmentTransaction {
-  --> DrugShipment  drugshipment
-}
-
-/**
- * A temperature reading for a shipment
- */
-transaction TemperatureReading extends DrugShipmentTransaction {
-  o Double centigrade
-}
-
-/**
- * A notification that a shipment has been received by the
- * storage facility or Meta Pharma.
-*/
-transaction ShipmentReceived extends DrugShipmentTransaction {
-  o DrugShipmentStatus status
-}
-
-
-
-
-/**       
- * ASSETS
- * A shipment being tracked as an asset on the ledger of the storage facility. Note, the     “destination” attribute is the specific hospital name in France.
- */
-asset DrugShipment identified by drugName {
-  o String drugName
-  o DrugShipmentStatus status
-  o Long unitCount
-  o String courier_name
-  o String destination
-  o TemperatureReading[] temperatureReadings optional
-  --> StorageFacility sf
+async function Create_Drug_Batch(create_batch) {
+	const factory = getFactory();
+    const NS = 'org.acme.shipping.clinical_trials';
   
+  
+	const drugdetails = factory.newResource(NS, 'DrugDetails',  create_batch.ID)
+    drugdetails.ID = create_batch.ID
+  /**	drugdetails.status = create_batch.status */
+  	drugdetails.drugName = create_batch.drugName
+  	drugdetails.drugQuantity = create_batch.drugQuantity
+  	drugdetails.drugDuration = create_batch.drugDuration
+  
+  	const assetregistry = await getAssetRegistry(NS + '.DrugDetails')
+    await assetregistry.add(drugdetails)
+
+	/** console.log(create_batch);*/
+    	
 }
 
-/**
- Contract established with participants of business network. The “contractId” is a string value indicating the designated organization (Administration or Audit) and information placed in appropriate ledger. 
+
+/**  Initialize some test assets and participants useful for running a demo.
+  @param {org.acme.shipping.clinical_trials.SetupDemo} setupDemo
+  @transaction
  */
-
-asset Contract identified by contractId {
-  o String contractId
-  --> Administration admin
-  --> Audit audit
-  --> Production  production
-  --> StorageFacility storagefacility
-  o DateTime arrivalTime
-  o Double minTemperature
-  o Double maxTemperature 
-}
-
-/**
- * A template for street address object
- */
-concept Address {
-  o String city
-  o String country
-  o String street 
-  o String zip 
-}
-
-asset DrugDetails identified by drugName{
-  o String drugName 
-  o Integer drugQuantity
-  o Integer drugDuration
- }
-
-/**
-* PARTICIPANTS
- * An abstract participant type defines the attributes of objects involved in business network
- */
-
-participant Hospital identified by email{
-  o String email
-  o Address address
-  --> Patient pt
-}
  
+async function setupDemo(setupDemo) {  // eslint-disable-line no-unused-vars
 
-participant Courier identified by courierID {
-  o String courierID
-  o Address address
-  o DrugShipmentStatus status
-  --> Hospital hosp
-}
+    const factory = getFactory();
+    const NS = 'org.acme.shipping.clinical_trials';
 
-participant Patient identified by date_of_birth{
-  o String date_of_birth
-  o String firstName
-  o String lastName 
- 
+	// PARTICIPANTS    (HR)
+	
+	
+    // create the Administration
+    const administration = factory.newResource(NS, 'Administration',                  getCurrentParticipant().getIdentifier());
+    administration.email = 'ahof@amail.com';
+    administration.business_name = 'American Hospital of France';
+    administration.address= '222 Loius St.';
 
-}
+    // create the Hospital
+    const hospital= factory.newResource(NS, 'Hospital', getCurrentParticipant().getIdentifier());
+    const hospitalAddress = factory.newConcept(NS, 'Address');
+    hospital.city = 'Paris';
+    hospital.address = hospitalAddress;
+    hospital.country = 'France';
+	hospital.street = '222 Louis St.';
+	hospital.email = 'Hosp@hmail.com'; 
+	hospital.patient = factory.newRelationship(NS,'Patient', getCurrentParticipant().getIdentifier()); 
 
-/**
- *  Administration (organization), a participant in the network.
- */
+    // create the Patient
+    const patient = factory.newResource(NS, 'Patient', getCurrentParticipant().getIdentifier());
+    patient.date_of_birth= '01/10/2000';
+    patient.firstName = 'Jonas';
+    patient.lastName = 'Millon';
+   
+	
+	  // create the Production
+    const production= factory.newResource(NS, 'Production', getCurrentParticipant().getIdentifier());
+    production.email='prod@email.com';
+    const toHospitalRef = factory.newRelationship(NS, 'Hospital', getCurrentParticipant().getIdentifier());
+    production.hosp= toHospitalRef;
+    
+    
 
+	  // create the StorageFacility
+    const storage_facility = factory.newResource(NS, 'StorageFacility', getCurrentParticipant().getIdentifier());
+    const storage_facilityAddress = factory.newConcept(NS, 'Address');
+	storage_facility.storageID = 'Paris-5656'; 
+    storage_facilityAddress.country = 'France';
+    storage_facility.address = storage_facilityAddress;
+	storage_facility.drugShipment= DrugShipment.drugName; 
+	storage_facility.status = 'RECEIVED';
+	const toCourierRef = factory.newRelationship(NS, 'Courier', getCurrentParticipant().getIdentifier());
+    storage_facility.courier= toCourierRef;
+	
+	
+	// create the Courier 
+    const courier = factory.newResource(NS, 'Courier', getCurrentParticipant().getIdentifier());
+    const courierAddress = factory.newConcept(NS, 'Address');
+	courier.courierID = 'Fedex-5656'; 
+    courierAddress.country = 'France';
+    courier.address = courierAddress;
+    courier.courierID= 'company_2234'; 
+    courier.status='IN_TRANSIT';
+	const toHospRef = factory.newRelationship(NS, 'Hospital', getCurrentParticipant().getIdentifier());
+    courier.hosp= toHospRef;
+	
+	
+	  // create the Audit 
+    const audits= factory.newResource(NS, 'Audit', getCurrentParticipant().getIdentifier());
+    const auditAddress = factory.newConcept(NS, 'Address');
+	audits.auditID = 'Audit_ctrial-2020'; 
+    auditAddress.country = 'France';
+    audits.address = auditAddress;
+	audits.storage_facility= StorageFacility.storage_facility;
+	audits.drugdetails = DrugDetails.drugdetails; 
+	audits.pt = Patient.date_of_birth; 
+	
+	
+	
+	
+	
+	// ASSETS 
+    // create the Contract   (GH)
+    const contract = factory.newResource(NS, 'Contract', 'CON_001');
 
-participant Administration identified by email {
-  o String email
-  o String business_name
-  o String address
-}
+    contract.admin = factory.newRelationship(NS, 'Administration', 'ahof@amail.com');
+    contract.audit = factory.newRelationship(NS, 'Auditer', 'audit@email.com');
+    contract.production = factory.newRelationship(NS, 'Production', 'production@email.com');
+    contract.storagefacility = factory.newRelationship(NS, 'Storage Facility', 'storagefacility@email.com');
+    contract.courier = factory.newRelationship(NS, 'Courier', 'cservice@email.com'); 
+	
+    contract.contractId = 'CON_001'; // name of the contract
+    contract.minTemperature = 5; // min temperature for the cargo
+    contract.maxTemperature = 15; // max temperature for the cargo
 
-/**
- * An Audit (organization), a participant in the network
- */
-participant Audit identified by auditID {
-  o String auditID
-  o StorageFacility storage_facility
-  o DrugDetails drugdetails
-  o Patient pt 
-}
+    //const tomorrow = setupDemo.timestamp;
+    //tomorrow.setDate(tomorrow.getDate() + 1);
+    //contract.unitPrice = 0.5; pay 50 cents per unit
+    //contract.minTemperature = 2;  min temperature for the cargo
+    //contract.maxTemperature = 10;  max temperature for the cargo
+    //contract.minPenaltyFactor = 0.2;  we reduce the price by 20 cents for every degree below the min temp
+    //contract.maxPenaltyFactor = 0.1;  we reduce the price by 10 cents for every degree above the max temp
 
-/**
- * A Production (organization), a participant in the network
- */
-participant Production identified by email { 
-  o String email
-  o Hospital hosp
-}
+    // create the DrugDetails   (GH)
+    const shipment = factory.newResource(NS, 'Shipment', 'SHIP_001');
+    shipment.drugName = 'AZO-D';
+    shipment.drugQuantity = 5000;
+    shipment.Duration = 12;
+    shipment.contract = factory.newRelationship(NS, 'Contract', 'CON_001');
 
-/**
- * StorageFacility (organization), a participant in the network
- */
-participant StorageFacility identified by storageID {
-  o String storageID
-  o Address address 
-  o DrugShipment drugShipment
-  o DrugShipmentStatus status
-  --> Courier courier 
-}
+	// create the DrugShipment   (GH)
+    const shipment1 = factory.newResource(NS, 'Shipment', 'SHIP_001');
+    shipment1.drugname = 'AZO-D';
+    shipment1.status = 'IN_TRANSIT';
+    shipment1.unitCount = 5000;
+    shipment1.courier_name = 'USPA';
+    shipment1.destination = 'France';
+    shipment1.TemperatureReading = [5,10,13];
+    shipment1.contract = factory.newRelationship(NS, 'Contract', 'CON_001');
+	
+	// Add PARTICIPANTS/ASSETS to the network
+	
+	// add Administration registry
+    const AdministrationRegistry = await getParticipantRegistry(NS + '.Administration');
+    await AdministrationRegistry.addAll([Administration]);
 
-/**
- * JUST FOR INITIALIZING A DEMO
- */
-transaction SetupDemo {
+    // add hospital registry
+    const hospitalRegistry = await getParticipantRegistry(NS + '.Hospital');
+    await hospitalRegistry.addAll([Hospital]);
+
+    // add the patient registry 
+    const patientRegistry = await getParticipantRegistry(NS + '.Patient');
+    await patientRegistry.addAll([Patient]);
+	
+	// add the production registry 
+    const productionRegistry = await getParticipantRegistry(NS + '.Production');
+    await productionRegistry.addAll([Production]);
+	
+	// add the storage facility registry 
+    const storagefacelityRegistry = await getParticipantRegistry(NS + '.StorageFacility');
+    await storagefacelityRegistry.addAll([StorageFacility]);
+	
+	// add the courier registry 
+    const courierRegistry = await getParticipantRegistry(NS + '.Courier');
+    await courierRegistry.addAll([Courier]);
+	
+	// add the audit registry 
+    const auditRegistry = await getParticipantRegistry(NS + '.Audit');
+    await auditRegistry.addAll([Audit]);
+	
+    // add the contracts registry
+    const contractRegistry = await getAssetRegistry(NS + '.Contract');
+    await contractRegistry.addAll([contract]);
+
+    // add the Drug Details registry
+    const DrugDetailsRegistry = await getAssetRegistry(NS + '.DrugDetails');
+    await DrugDetailsRegistry.addAll([DrugDetails]);
+	
+	// add the Drug Shipment registry 
+    const DrugShipmentRegistry = await getAssetRegistry(NS + '.DrugShipment');
+    await DrugShipmentRegistry.addAll([DrugShipment]);
 }
