@@ -31,13 +31,14 @@ enum DrugBatchStatus {
 
 transaction Create_Drug_Batch {
   o String ID
+  --> DrugDetails drug_details
   --> Production production
 }
 
 event Create_Drug_Batch_Event {
   o DrugBatchStatus drugbatchstatus
   --> Production production
-  --> DrugDetails drugdetails
+  --> DrugDetails drug_details
 }
 
 
@@ -67,7 +68,8 @@ transaction ShipmentReceived extends DrugShipmentTransaction {
  * ASSETS
  * A shipment being tracked as an asset on the ledger of the storage facility. Note, the     “destination” attribute is the specific hospital name in France.
  */
-asset DrugShipment identified by drugName {
+asset DrugShipment identified by drugShipID {
+  o String drugShipID
   o String drugName
   o DrugShipmentStatus status
   o Long unitCount
@@ -130,7 +132,8 @@ participant Courier identified by courierID {
   --> Hospital hosp
 }
 
-participant Patient identified by date_of_birth{
+participant Patient identified by patientID{
+  o String patientID
   o String date_of_birth
   o String firstName
   o String lastName 
