@@ -1,9 +1,9 @@
 /**
- * Create a business network for initiation of clinical trial by pharmaceutical company, 
+ * Create a business network for initiation of clinical trial by pharmaceutical company,
  * Meta Pharma.
- * Meta Pharma company produces 7,500 units of temperature control drug and transports 
- * to hospitals   
- * in France. The first step is to ship the drug to a storage facility where couriers 
+ * Meta Pharma company produces 7,500 units of temperature control drug and transports
+ * to hospitals
+ * in France. The first step is to ship the drug to a storage facility where couriers
  * will deliver the goods to *respective locations for patients to use in clinical trials.
 */
 
@@ -24,26 +24,30 @@ enum DrugBatchStatus {
   o RECEIVED
 }
 
-/**   
+/**
 * TRANSACTIONS
- * An abstract transaction relating to shipment of drug to a storage facility or to respective hospital. 
+ * An abstract transaction relating to shipment of drug to a storage facility or to respective hospital.
  */
 
 transaction Create_Drug_Batch {
   o String ID
-  --> DrugDetails drug_details
-  --> Production production
+  o DrugBatchStatus status
+  o String drugName
+  o Integer drugQuantity
+  o Integer drugDuration
+  o DrugShipment drugshipment optional
+  --> Production Production
 }
 
 event Create_Drug_Batch_Event {
-  o DrugBatchStatus drugbatchstatus
-  --> Production production
-  --> DrugDetails drug_details
+  o DrugBatchStatus DrugBatchStatus
+  --> Production Production
+  --> DrugDetails DrugDetails
 }
 
 
 abstract transaction DrugShipmentTransaction {
-  --> DrugShipment  drugshipment
+  --> DrugShipment drugshipment
 }
 
 /**
@@ -64,7 +68,7 @@ transaction ShipmentReceived extends DrugShipmentTransaction {
 
 
 
-/**       
+/**
  * ASSETS
  * A shipment being tracked as an asset on the ledger of the storage facility. Note, the     “destination” attribute is the specific hospital name in France.
  */
@@ -77,11 +81,11 @@ asset DrugShipment identified by drugShipID {
   o String destination
   o TemperatureReading[] temperatureReadings optional
   --> StorageFacility sf
-  
+
 }
 
 /**
- Contract established with participants of business network. The “contractId” is a string value indicating the designated organization (Administration or Audit) and information placed in appropriate ledger. 
+ Contract established with participants of business network. The “contractId” is a string value indicating the designated organization (Administration or Audit) and information placed in appropriate ledger.
  */
 
 asset Contract identified by contractId {
@@ -92,7 +96,7 @@ asset Contract identified by contractId {
   --> StorageFacility storagefacility
   o DateTime arrivalTime
   o Double minTemperature
-  o Double maxTemperature 
+  o Double maxTemperature
 }
 
 /**
@@ -101,16 +105,17 @@ asset Contract identified by contractId {
 concept Address {
   o String city
   o String country
-  o String street 
-  o String zip 
+  o String street
+  o String zip
 }
 
-asset DrugDetails identified by ID{
-  o String ID 
+asset DrugDetails identified by ID {
+  o String ID
   o DrugBatchStatus status
-  o String drugName 
+  o String drugName
   o Integer drugQuantity
   o Integer drugDuration
+  o DrugShipment drugshipment optional
  }
 
 /**
@@ -123,7 +128,7 @@ participant Hospital identified by email{
   o Address address
   --> Patient pt
 }
- 
+
 
 participant Courier identified by courierID {
   o String courierID
@@ -136,8 +141,8 @@ participant Patient identified by patientID{
   o String patientID
   o String date_of_birth
   o String firstName
-  o String lastName 
- 
+  o String lastName
+
 
 }
 
@@ -159,13 +164,13 @@ participant Audit identified by auditID {
   o String auditID
   o StorageFacility storage_facility
   o DrugDetails drugdetails
-  o Patient pt 
+  o Patient pt
 }
 
 /**
  * A Production (organization), a participant in the network
  */
-participant Production identified by email { 
+participant Production identified by email {
   o String email
   o Hospital hosp
 }
@@ -175,10 +180,10 @@ participant Production identified by email {
  */
 participant StorageFacility identified by storageID {
   o String storageID
-  o Address address 
+  o Address address
   o DrugShipment drugShipment
   o DrugShipmentStatus status
-  --> Courier courier 
+  --> Courier courier
 }
 
 /**
@@ -186,4 +191,3 @@ participant StorageFacility identified by storageID {
  */
 transaction SetupDemo {
 }
-
