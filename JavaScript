@@ -56,6 +56,41 @@ async function temperatureReading(temperatureReading) {  // eslint-disable-line 
     await shipmentRegistry.update(shipment);
 }
 
+  
+
+
+/**
+* Create audit trail containing detailed information of entities available for viewing by 
+* MetaPharma
+* @param {org.acme.shipping.clinical_trials.PostAudit} create_audit
+* @transaction
+*/
+
+async function PostAudit(create_audit) { // eslint-disable-line no-unused-vars
+const factory = getFactory();
+const NS = 'org.acme.shipping.clinical_trials';
+
+let results = await query('selectCreateDrugBatches');
+console.log(results);
+  
+const auditdetails = factory.newResource(NS, 'AuditDetails', create_audit.ID);
+auditdetails.ID = create_audit.ID;
+auditdetails.hospital_name = create_audit.hospital_name
+auditdetails.drugName = create_audit.drugName
+
+
+// save audit details to registry 
+const assetregistry = await getAssetRegistry(NS + '.AuditDetails');
+await assetregistry.update(auditdetails)
+
+// emit the event
+const place_audit = factory.newEvent(NS, 'Audit_Event');
+place_audit.Production=auditdetails.Production; 
+place_audit.DrugDetails= auditdetails.DrugDetails; 
+place_audit.Administration=auditdetails.Administration; 
+emit(place_audit); 
+}
+
 
 
 
