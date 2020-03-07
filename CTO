@@ -45,6 +45,8 @@ event Create_Drug_Batch_Event {
   --> DrugDetails DrugDetails
 }
 
+transaction PostAudit {
+}
 
 abstract transaction DrugShipmentTransaction {
   --> DrugShipment drugshipment
